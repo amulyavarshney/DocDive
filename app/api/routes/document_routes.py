@@ -1,7 +1,6 @@
 import os
-import asyncio
-from typing import List, Dict, Any
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks, Query
+from typing import List, Dict, Any, Optional
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks, Query, Depends, status
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
@@ -11,11 +10,16 @@ from app.models.document import DocumentResponse, DocumentList
 router = APIRouter()
 
 
-@router.post("/documents/upload", response_model=DocumentResponse, tags=["documents"])
+@router.post(
+    "/documents/upload", 
+    response_model=DocumentResponse, 
+    status_code=status.HTTP_201_CREATED,
+    tags=["documents"]
+)
 async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-):
+) -> DocumentResponse:
     """
     Upload a document for processing and indexing.
     
@@ -28,7 +32,7 @@ async def upload_document(
     
     if file_size > settings.MAX_UPLOAD_SIZE:
         raise HTTPException(
-            status_code=413,
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File size exceeds the maximum allowed size ({settings.MAX_UPLOAD_SIZE / (1024 * 1024):.1f}MB)"
         )
     
@@ -41,7 +45,7 @@ async def upload_document(
     
     if file_extension not in settings.SUPPORTED_DOCUMENT_TYPES:
         raise HTTPException(
-            status_code=415,
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"Unsupported file type: {file_extension}. Supported types: {', '.join(settings.SUPPORTED_DOCUMENT_TYPES)}"
         )
     
@@ -73,14 +77,19 @@ async def upload_document(
         return response
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.get("/documents", response_model=DocumentList, tags=["documents"])
+@router.get(
+    "/documents", 
+    response_model=DocumentList, 
+    tags=["documents"],
+    response_description="List of documents with pagination"
+)
 async def get_documents(
-    limit: int = Query(100, ge=1, le=1000),
-    skip: int = Query(0, ge=0)
-):
+    limit: int = Query(100, ge=1, le=1000, description="Number of documents to return"),
+    skip: int = Query(0, ge=0, description="Number of documents to skip")
+) -> DocumentList:
     """
     Get a list of all uploaded documents with pagination.
     """
@@ -89,11 +98,19 @@ async def get_documents(
         return DocumentList(documents=result["documents"], total=result["total"])
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.get("/documents/{document_id}", response_model=DocumentResponse, tags=["documents"])
-async def get_document(document_id: str):
+@router.get(
+    "/documents/{document_id}", 
+    response_model=DocumentResponse, 
+    tags=["documents"],
+    responses={
+        404: {"description": "Document not found"},
+        500: {"description": "Internal server error"}
+    }
+)
+async def get_document(document_id: str) -> DocumentResponse:
     """
     Get a specific document by ID.
     """
@@ -101,7 +118,10 @@ async def get_document(document_id: str):
         document = await document_service.get_document(document_id)
         
         if not document:
-            raise HTTPException(status_code=404, detail=f"Document not found: {document_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail=f"Document not found: {document_id}"
+            )
         
         return DocumentResponse(**document)
     
@@ -109,11 +129,20 @@ async def get_document(document_id: str):
         raise
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.delete("/documents/{document_id}", tags=["documents"])
-async def delete_document(document_id: str):
+@router.delete(
+    "/documents/{document_id}", 
+    tags=["documents"],
+    status_code=status.HTTP_200_OK,
+    response_description="Document deletion confirmation",
+    responses={
+        404: {"description": "Document not found"},
+        500: {"description": "Internal server error"}
+    }
+)
+async def delete_document(document_id: str) -> JSONResponse:
     """
     Delete a document and its embeddings.
     """
@@ -121,12 +150,18 @@ async def delete_document(document_id: str):
         success = await document_service.delete_document(document_id)
         
         if not success:
-            raise HTTPException(status_code=404, detail=f"Document not found: {document_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail=f"Document not found: {document_id}"
+            )
         
-        return {"status": "success", "message": f"Document {document_id} deleted successfully"}
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"status": "success", "message": f"Document {document_id} deleted successfully"}
+        )
     
     except HTTPException:
         raise
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) 
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) 

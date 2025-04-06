@@ -1,4 +1,5 @@
 import os
+from typing import List
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -11,6 +12,10 @@ class Settings(BaseModel):
     # API settings
     API_V1_STR: str = "/api"
     PROJECT_NAME: str = "Document Search & Q&A Platform"
+    HOST: str = os.getenv("HOST", "0.0.0.0")
+    PORT: int = int(os.getenv("PORT", 8000))
+    DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
+    CORS_ORIGINS: List[str] = os.getenv("CORS_ORIGINS", "*").split(",")
     
     # Database settings
     MONGODB_URI: str = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
@@ -36,7 +41,7 @@ class Settings(BaseModel):
     # Document settings
     UPLOAD_FOLDER: str = os.getenv("UPLOAD_FOLDER", "./data/uploads")
     MAX_UPLOAD_SIZE: int = int(os.getenv("MAX_UPLOAD_SIZE", 20 * 1024 * 1024))  # 20MB
-    SUPPORTED_DOCUMENT_TYPES: list = ["pdf", "md", "markdown", "csv", "txt"]
+    SUPPORTED_DOCUMENT_TYPES: List[str] = ["pdf", "md", "markdown", "csv", "txt"]
     
     # Retrieval settings
     DEFAULT_CHUNK_SIZE: int = int(os.getenv("DEFAULT_CHUNK_SIZE", 1000))
