@@ -1,0 +1,1 @@
+"""Pydantic models for the Document Search & Q&A Platform.""" 

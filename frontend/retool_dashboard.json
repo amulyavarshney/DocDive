@@ -1,0 +1,479 @@
+{
+  "name": "Document Search & Q&A Dashboard",
+  "description": "Dashboard for monitoring document search and Q&A metrics",
+  "components": [
+    {
+      "type": "container",
+      "id": "main_container",
+      "children": [
+        {
+          "type": "tabs",
+          "id": "mainTabs",
+          "tabs": [
+            {
+              "id": "dashboard",
+              "name": "Dashboard",
+              "children": [
+                {
+                  "type": "container",
+                  "id": "dashboard_metrics",
+                  "direction": "row",
+                  "children": [
+                    {
+                      "type": "container",
+                      "id": "queryVolume",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "queryVolumeTitle",
+                          "value": "Query Volume"
+                        },
+                        {
+                          "type": "chart",
+                          "id": "queryVolumeChart",
+                          "data": "{{ getQueryVolume.data || [] }}",
+                          "title": "Queries Per Day",
+                          "xAxis": {
+                            "key": "date"
+                          },
+                          "yAxis": {
+                            "key": "count"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "container",
+                      "id": "latencyMetrics",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "latencyTitle",
+                          "value": "Average Latency"
+                        },
+                        {
+                          "type": "chart",
+                          "id": "latencyChart",
+                          "data": "{{ getLatency.data || [] }}",
+                          "title": "Average Response Time (seconds)",
+                          "xAxis": {
+                            "key": "date"
+                          },
+                          "yAxis": {
+                            "key": "avg_latency"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "container",
+                      "id": "successRate",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "successRateTitle",
+                          "value": "Success Rate"
+                        },
+                        {
+                          "type": "chart",
+                          "id": "successRateChart",
+                          "data": "{{ getSuccessRate.data || [] }}",
+                          "title": "Query Success Rate (%)",
+                          "xAxis": {
+                            "key": "date"
+                          },
+                          "yAxis": {
+                            "key": "success_rate",
+                            "format": "percentage"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "container",
+                  "id": "dashboard_top_items",
+                  "direction": "row",
+                  "children": [
+                    {
+                      "type": "container",
+                      "id": "topQueries",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "topQueriesTitle",
+                          "value": "Top Queries"
+                        },
+                        {
+                          "type": "table",
+                          "id": "topQueriesTable",
+                          "data": "{{ getTopQueries.data || [] }}",
+                          "columns": [
+                            {
+                              "id": "query_text",
+                              "title": "Query"
+                            },
+                            {
+                              "id": "count",
+                              "title": "Count"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "container",
+                      "id": "topDocuments",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "topDocumentsTitle",
+                          "value": "Top Documents"
+                        },
+                        {
+                          "type": "table",
+                          "id": "topDocumentsTable",
+                          "data": "{{ getTopDocuments.data || [] }}",
+                          "columns": [
+                            {
+                              "id": "file_name",
+                              "title": "Document"
+                            },
+                            {
+                              "id": "count",
+                              "title": "Query Count"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "documents",
+              "name": "Document Management",
+              "children": [
+                {
+                  "type": "container",
+                  "id": "document_upload",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "uploadTitle",
+                      "value": "Upload New Document"
+                    },
+                    {
+                      "type": "file_picker",
+                      "id": "documentPicker",
+                      "label": "Select Document"
+                    },
+                    {
+                      "type": "button",
+                      "id": "uploadButton",
+                      "label": "Upload Document",
+                      "onClick": "{{ uploadDocument.trigger() }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "container",
+                  "id": "document_list",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "documentListTitle",
+                      "value": "Document Library"
+                    },
+                    {
+                      "type": "table",
+                      "id": "documentTable",
+                      "data": "{{ getDocuments.data ? (getDocuments.data.documents || []) : [] }}",
+                      "columns": [
+                        {
+                          "id": "file_name",
+                          "title": "Filename"
+                        },
+                        {
+                          "id": "file_type",
+                          "title": "Type"
+                        },
+                        {
+                          "id": "file_size",
+                          "title": "Size",
+                          "format": "bytes"
+                        },
+                        {
+                          "id": "upload_date",
+                          "title": "Upload Date",
+                          "format": "datetime"
+                        },
+                        {
+                          "id": "embedding_status",
+                          "title": "Status"
+                        }
+                      ],
+                      "actions": [
+                        {
+                          "type": "button",
+                          "label": "Delete",
+                          "onClick": "{{ deleteDocument.trigger({ document_id: currentRow.document_id }) }}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "qa",
+              "name": "Q&A Interface",
+              "children": [
+                {
+                  "type": "container",
+                  "id": "qa_interface",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "qaTitle",
+                      "value": "Ask Questions About Your Documents"
+                    },
+                    {
+                      "type": "select",
+                      "id": "documentSelect",
+                      "label": "Filter by Document (Optional)",
+                      "allowMultiple": true,
+                      "data": "{{ getDocuments.data ? (getDocuments.data.documents || []) : [] }}",
+                      "displayValue": "file_name",
+                      "value": "document_id"
+                    },
+                    {
+                      "type": "text_input",
+                      "id": "queryInput",
+                      "label": "Your Question",
+                      "placeholder": "Ask a question about your documents..."
+                    },
+                    {
+                      "type": "button",
+                      "id": "askButton",
+                      "label": "Ask Question",
+                      "onClick": "{{ askQuestion.trigger() }}"
+                    },
+                    {
+                      "type": "container",
+                      "id": "answerContainer",
+                      "visible": "{{ !!askQuestion.data }}",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "answerTitle",
+                          "value": "Answer"
+                        },
+                        {
+                          "type": "markdown",
+                          "id": "answerText",
+                          "value": "{{ askQuestion.data ? askQuestion.data.answer : '' }}"
+                        },
+                        {
+                          "type": "text",
+                          "id": "sourcesTitle",
+                          "value": "Sources"
+                        },
+                        {
+                          "type": "table",
+                          "id": "sourcesTable",
+                          "data": "{{ askQuestion.data ? (askQuestion.data.sources || []) : [] }}",
+                          "columns": [
+                            {
+                              "id": "file_name",
+                              "title": "Document"
+                            },
+                            {
+                              "id": "content",
+                              "title": "Content Preview"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "container",
+                  "id": "demo_questions",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "demoTitle",
+                      "value": "Demo Questions"
+                    },
+                    {
+                      "type": "list",
+                      "id": "demoList",
+                      "data": "{{ getDemoQuestions.data ? (getDemoQuestions.data.demo_questions || []) : [] }}",
+                      "itemTemplate": {
+                        "type": "container",
+                        "children": [
+                          {
+                            "type": "text",
+                            "value": "{{ item.question }}"
+                          },
+                          {
+                            "type": "button",
+                            "label": "Ask This",
+                            "onClick": "{{ queryInput.setValue(item.question); askButton.click() }}"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "query_history",
+              "name": "Query History",
+              "children": [
+                {
+                  "type": "container",
+                  "id": "history_container",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "historyTitle",
+                      "value": "Previous Queries"
+                    },
+                    {
+                      "type": "table",
+                      "id": "historyTable",
+                      "data": "{{ getQueryHistory.data ? (getQueryHistory.data.queries || []) : [] }}",
+                      "columns": [
+                        {
+                          "id": "query_text",
+                          "title": "Query"
+                        },
+                        {
+                          "id": "timestamp",
+                          "title": "Time",
+                          "format": "datetime"
+                        },
+                        {
+                          "id": "latency",
+                          "title": "Latency (s)"
+                        },
+                        {
+                          "id": "status",
+                          "title": "Status"
+                        }
+                      ],
+                      "actions": [
+                        {
+                          "type": "button",
+                          "label": "Rerun",
+                          "onClick": "{{ queryInput.setValue(currentRow.query_text); askButton.click() }}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "queries": [
+    {
+      "type": "restapi",
+      "id": "getQueryVolume",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/api/metrics/query-volume",
+      "triggers": ["onMount", "interval:60000"]
+    },
+    {
+      "type": "restapi",
+      "id": "getLatency",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/api/metrics/latency",
+      "triggers": ["onMount", "interval:60000"]
+    },
+    {
+      "type": "restapi",
+      "id": "getSuccessRate",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/api/metrics/success-rate",
+      "triggers": ["onMount", "interval:60000"]
+    },
+    {
+      "type": "restapi",
+      "id": "getTopQueries",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/api/metrics/top-queries",
+      "triggers": ["onMount", "interval:60000"]
+    },
+    {
+      "type": "restapi",
+      "id": "getTopDocuments",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/api/metrics/top-documents",
+      "triggers": ["onMount", "interval:60000"]
+    },
+    {
+      "type": "restapi",
+      "id": "getDocuments",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/api/documents",
+      "triggers": ["onMount", "interval:30000"]
+    },
+    {
+      "type": "restapi",
+      "id": "uploadDocument",
+      "method": "POST",
+      "endpoint": "http://localhost:8000/api/documents/upload",
+      "body": {
+        "type": "formData",
+        "file": "{{ documentPicker.files && documentPicker.files.length > 0 ? documentPicker.files[0] : null }}"
+      },
+      "triggers": ["manual"],
+      "onSuccess": "{{ getDocuments.trigger() }}"
+    },
+    {
+      "type": "restapi",
+      "id": "deleteDocument",
+      "method": "DELETE",
+      "endpoint": "http://localhost:8000/api/documents/{{document_id}}",
+      "triggers": ["manual"],
+      "onSuccess": "{{ getDocuments.trigger() }}"
+    },
+    {
+      "type": "restapi",
+      "id": "askQuestion",
+      "method": "POST",
+      "endpoint": "http://localhost:8000/api/query",
+      "body": {
+        "type": "json",
+        "query_text": "{{ queryInput.value }}",
+        "document_ids": "{{ documentSelect.value && documentSelect.value.length > 0 ? documentSelect.value : undefined }}"
+      },
+      "triggers": ["manual"],
+      "onSuccess": "{{ getQueryHistory.trigger() }}"
+    },
+    {
+      "type": "restapi",
+      "id": "getQueryHistory",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/api/queries",
+      "triggers": ["onMount", "interval:30000"]
+    },
+    {
+      "type": "restapi",
+      "id": "getDemoQuestions",
+      "method": "GET",
+      "endpoint": "http://localhost:8000/api/demo-questions",
+      "triggers": ["onMount"]
+    }
+  ]
+} 
