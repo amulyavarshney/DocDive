@@ -1,5 +1,5 @@
 """
-Document Search & Q&A Platform with Metrics Dashboard.
+DocDive: Dive Deep into Document Intelligence
 
 A system for document ingestion, storage, search, and LLM-powered query with metrics.
 """
