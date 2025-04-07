@@ -1,5 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from app.services import system_service
+import subprocess
+import threading
+import os
 
 router = APIRouter()
 
@@ -23,7 +26,7 @@ async def run_diagnostics():
         }
 
 
-@router.post("/reset-chromadb", tags=["system"])
+@router.delete("/reset-chromadb", tags=["system"])
 async def reset_chroma_database():
     """
     Reset the ChromaDB storage directory.
@@ -43,7 +46,7 @@ async def reset_chroma_database():
         }
 
 
-@router.post("/reset-mongodb", tags=["system"])
+@router.delete("/reset-mongodb", tags=["system"])
 async def reset_mongo_database():
     """
     Reset the MongoDB database.
@@ -54,6 +57,50 @@ async def reset_mongo_database():
     try:
         result = await system_service.reset_mongo_db()
         return result
+    
+    except Exception as e:
+        return {
+            "status": "error", 
+            "message": str(e)
+        }
+
+
+@router.post("/run-locust", tags=["system"])
+async def run_locust_test():
+    """
+    Start a Locust load test with web UI.
+    
+    This endpoint launches a Locust instance with web UI enabled on port 8089.
+    Users can then visit the Locust web interface to configure and run tests.
+    """
+    try:
+        # Define the command to run Locust with web UI
+        port = 8089
+        cmd = ["locust", "-f", "tests/load_tests/locustfile.py", "--web-host", "0.0.0.0", "--web-port", str(port)]
+        
+        # Start Locust in a separate thread
+        def run_locust_in_background():
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=os.getcwd()
+            )
+            print(f"Locust started with PID: {process.pid}")
+            print(f"Access the Locust web UI at: http://localhost:{port}")
+        
+        # Start the thread
+        thread = threading.Thread(target=run_locust_in_background)
+        thread.daemon = True
+        thread.start()
+        
+        # Return the URL for redirection
+        return {
+            "status": "success",
+            "message": "Locust started with web UI",
+            "url": f"http://localhost:{port}",
+            "command": " ".join(cmd)
+        }
     
     except Exception as e:
         return {

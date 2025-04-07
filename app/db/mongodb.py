@@ -56,6 +56,35 @@ async def get_all_documents(limit: int = 100, skip: int = 0) -> List[Dict[str, A
     """Get all documents with pagination"""
     return list(documents_collection.find({}, {"_id": 0}).skip(skip).limit(limit))
 
+async def get_document_status_counts() -> Dict[str, int]:
+    """Get document counts grouped by embedding status"""
+    # Get counts for each status
+    total_count = documents_collection.count_documents({})
+    processed_count = documents_collection.count_documents({"embedding_status": "processed"})
+    pending_count = documents_collection.count_documents({"embedding_status": "pending"})
+    error_count = documents_collection.count_documents({"embedding_status": "error"})
+    
+    return {
+        "total": total_count,
+        "processed": processed_count,
+        "pending": pending_count,
+        "error": error_count
+    }
+
+async def get_document_type_distribution() -> List[Dict[str, Any]]:
+    """Get document counts grouped by file type"""
+    pipeline = [
+        {"$group": {
+            "_id": "$file_type",
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"count": -1}}
+    ]
+    result = list(documents_collection.aggregate(pipeline))
+    
+    # Transform the result to a more friendly format
+    return [{"type": doc["_id"], "count": doc["count"]} for doc in result] 
+
 async def delete_document(document_id: str) -> bool:
     """Delete document by ID"""
     result = documents_collection.delete_one({"document_id": document_id})
@@ -71,9 +100,10 @@ async def get_query(query_id: str) -> Optional[Dict[str, Any]]:
     """Get query by ID"""
     return queries_collection.find_one({"query_id": query_id})
 
-async def get_queries(limit: int = 100, skip: int = 0) -> List[Dict[str, Any]]:
-    """Get all queries with pagination"""
-    return list(queries_collection.find({}, {"_id": 0}).skip(skip).limit(limit))
+async def get_queries(limit: int = 100, skip: int = 0, sort: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Get all queries with pagination, sorted by timestamp (newest first)"""
+    sort_direction = -1 if sort == "desc" else 1
+    return list(queries_collection.find({}, {"_id": 0}).sort("timestamp", sort_direction).skip(skip).limit(limit))
 
 # Metrics operations
 async def log_metric(metric_data: Dict[str, Any]) -> str:

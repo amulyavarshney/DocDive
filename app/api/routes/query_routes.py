@@ -64,13 +64,14 @@ async def query_documents(query: QueryRequest) -> QueryResponse:
 )
 async def get_query_history(
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of queries to return"),
-    skip: int = Query(0, ge=0, description="Number of queries to skip")
+    skip: int = Query(0, ge=0, description="Number of queries to skip"),
+    sort: Optional[str] = Query("desc", description="Sort direction: 'desc' for newest first (default), 'asc' for oldest first")
 ) -> QueryHistory:
     """
     Get query history with pagination.
     """
     try:
-        result = await query_service.get_query_history(limit, skip)
+        result = await query_service.get_query_history(limit, skip, sort)
         return QueryHistory(queries=result["queries"], total=result["total"])
     
     except Exception as e:

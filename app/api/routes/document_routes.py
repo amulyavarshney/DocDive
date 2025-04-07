@@ -102,6 +102,44 @@ async def get_documents(
 
 
 @router.get(
+    "/documents/stats", 
+    tags=["documents"],
+    status_code=status.HTTP_200_OK,
+    response_description="Document count statistics by status"
+)
+async def get_document_stats() -> Dict[str, int]:
+    """
+    Get document count statistics by embedding status.
+    
+    Returns counts for processed, pending, and error documents.
+    """
+    try:
+        stats = await document_service.get_document_status_counts()
+        return stats
+    
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+@router.get(
+    "/documents/types", 
+    tags=["documents"],
+    status_code=status.HTTP_200_OK,
+    response_description="Document distribution by file type"
+)
+async def get_document_types() -> List[Dict[str, Any]]:
+    """
+    Get document distribution by file type.
+    
+    Returns counts for each file type (pdf, txt, csv, etc.)
+    """
+    try:
+        distribution = await document_service.get_document_type_distribution()
+        return distribution
+    
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) 
+
+@router.get(
     "/documents/{document_id}", 
     response_model=DocumentResponse, 
     tags=["documents"],

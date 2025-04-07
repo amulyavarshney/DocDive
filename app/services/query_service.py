@@ -42,8 +42,8 @@ async def get_document_collections(document_ids: Optional[List[str]] = None) -> 
     """Get list of collections to search"""
     if not document_ids:
         # Get all documents with completed embeddings
-        documents = await mongodb.documents_collection.find(
-            {"embedding_status": "completed"}
+        documents = mongodb.documents_collection.find(
+            {"embedding_status": "processed"}
         ).to_list(length=None)
         document_ids = [doc["document_id"] for doc in documents]
     
@@ -118,12 +118,26 @@ async def perform_query(query_request: QueryRequest) -> QueryResponse:
             raise ValueError("No valid vector stores could be created")
         
         # Combine vector stores
-        combined_store = vector_stores[0]
-        for store in vector_stores[1:]:
+        # Create a new combined store with all documents
+        combined_store = Chroma(
+            collection_name=f"combined_{uuid.uuid4()}",
+            embedding_function=embedding_model,
+            client=get_chroma_client()
+        )
+        
+        # Add documents from all stores to the combined store
+        for store in vector_stores:
             try:
-                combined_store.merge_from(store)
+                # Get all documents from the store
+                docs = store.get()
+                if docs and docs.get('documents'):
+                    # Add documents to combined store
+                    combined_store.add_texts(
+                        texts=docs['documents'],
+                        metadatas=docs.get('metadatas', [{}] * len(docs['documents']))
+                    )
             except Exception as e:
-                raise ValueError(f"Failed to merge vector stores: {str(e)}")
+                raise ValueError(f"Failed to combine vector stores: {str(e)}")
         
         # Create retriever with proper configuration
         retriever = combined_store.as_retriever(
@@ -154,7 +168,9 @@ async def perform_query(query_request: QueryRequest) -> QueryResponse:
                 "document_id": doc.metadata.get("document_id", ""),
                 "file_name": doc.metadata.get("file_name", ""),
                 "chunk_id": doc.metadata.get("chunk_id", 0),
-                "content": doc.page_content
+                "content": doc.page_content,
+                "keywords": doc.metadata.get("keywords", ""),
+                "page": doc.metadata.get("page", 0),
             }
             sources.append(source)
         
@@ -210,9 +226,9 @@ async def perform_query(query_request: QueryRequest) -> QueryResponse:
         )
 
 
-async def get_query_history(limit: int = 100, skip: int = 0) -> Dict[str, Any]:
+async def get_query_history(limit: int = 100, skip: int = 0, sort: Optional[str] = None) -> Dict[str, Any]:
     """Get query history with pagination"""
-    queries = await mongodb.get_queries(limit, skip)
+    queries = await mongodb.get_queries(limit, skip, sort)
     total = mongodb.queries_collection.count_documents({})
     
     return {

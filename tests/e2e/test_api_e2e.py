@@ -194,7 +194,7 @@ def test_query_flow(client, test_pdf):
         assert response.status_code == 200
         doc_data = response.json()
         
-        if doc_data.get("embedding_status") == "completed":
+        if doc_data.get("embedding_status") == "processed":
             processed = True
             break
         

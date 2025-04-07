@@ -187,7 +187,7 @@ async def store_document_embeddings(document_id: str, chunks: List[Document]) ->
                 {"document_id": document_id},
                 {
                     "$set": {
-                        "embedding_status": "completed",
+                        "embedding_status": "processed",
                         "chunk_count": len(chunks),
                         "updated_at": datetime.utcnow()
                     }
@@ -283,3 +283,14 @@ async def delete_document(document_id: str) -> bool:
         pass
     
     return True 
+
+
+async def get_document_status_counts() -> Dict[str, int]:
+    """Get document counts grouped by embedding status"""
+    # Get counts for each status
+    return await mongodb.get_document_status_counts()
+
+
+async def get_document_type_distribution() -> List[Dict[str, Any]]:
+    """Get document counts grouped by file type"""
+    return await mongodb.get_document_type_distribution()

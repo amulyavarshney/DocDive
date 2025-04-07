@@ -172,3 +172,56 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Locust logs
+locust.log
+locust.log.*
+
+# ChromaDB
+chroma_data
+
+# MongoDB
+mongodb_data
+
+# data
+data/
+
+# logs
+logs/
+*.log
+*.log.*
+
+# frontend
+frontend/node_modules
+frontend/dist
+frontend/build
+
+# backend
+backend/locust_data
+backend/chroma_data
+backend/mongodb_data
