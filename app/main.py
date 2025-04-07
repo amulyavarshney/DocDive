@@ -34,7 +34,7 @@ app.include_router(metrics_routes.router, prefix="/api", tags=["metrics"])
 app.include_router(system_routes.router, prefix="/api", tags=["system"])
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/", tags=["health"], response_model=dict)
 async def health_check() -> JSONResponse:
