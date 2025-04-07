@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first to leverage Docker cache
-COPY requirements.txt .
+COPY app/requirements.txt .
 RUN pip install --no-cache-dir -r app/requirements.txt
 
 # Copy the rest of the application
