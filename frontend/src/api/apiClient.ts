@@ -15,7 +15,7 @@ import {
 
 // Configure axios instance
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -134,7 +134,7 @@ export const systemApi = {
   },
   
   resetMongoDB: async (): Promise<any> => {
-    const response = await apiClient.post('/reset-mongodb');
+    const response = await apiClient.delete('/reset-mongodb');
     return response.data;
   },
   

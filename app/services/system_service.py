@@ -15,23 +15,6 @@ from app.core.config import settings
 from app.db import mongodb
 from app.services.chroma_client import get_chroma_client
 
-@lru_cache(maxsize=1)
-def get_chroma_client():
-    """Get a singleton instance of Chroma client with consistent settings"""
-    # Ensure the persist directory exists
-    os.makedirs(settings.VECTOR_DB_PATH, exist_ok=True)
-    
-    # Create consistent settings
-    client_settings = Settings(
-        persist_directory=settings.VECTOR_DB_PATH,
-        anonymized_telemetry=False,
-        allow_reset=True,
-        is_persistent=True
-    )
-    
-    # Return singleton client instance
-    return chromadb.PersistentClient(path=settings.VECTOR_DB_PATH, settings=client_settings)
-
 async def get_embedding_model():
     """Get available embedding model with fallback options"""
     # Try Azure OpenAI embeddings
@@ -215,7 +198,7 @@ async def test_connections() -> Dict[str, Any]:
         # Try to connect with more debug information
         print(f"Connecting to ChromaDB at path: {settings.VECTOR_DB_PATH}")
         try:
-            chroma_client = chromadb.PersistentClient(path=settings.VECTOR_DB_PATH)
+            chroma_client = get_chroma_client()
             print("ChromaDB client created successfully")
             
             # Test getting collection list
@@ -235,9 +218,8 @@ async def test_connections() -> Dict[str, Any]:
             # Try alternative approach - create a temporary collection
             try:
                 print("Trying alternative approach with temporary collection")
-                # Try a new client with explicit settings
-                persist_directory = os.path.abspath(settings.VECTOR_DB_PATH)
-                chroma_client = chromadb.PersistentClient(path=persist_directory)
+                # Use the same client configuration
+                chroma_client = get_chroma_client()
                 
                 # Create a test collection
                 test_collection = chroma_client.create_collection(name="test_connection")

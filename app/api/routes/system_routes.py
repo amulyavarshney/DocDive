@@ -3,6 +3,7 @@ from app.services import system_service
 import subprocess
 import threading
 import os
+import shutil
 
 router = APIRouter()
 
@@ -100,6 +101,36 @@ async def run_locust_test():
             "message": "Locust started with web UI",
             "url": f"http://localhost:{port}",
             "command": " ".join(cmd)
+        }
+    
+    except Exception as e:
+        return {
+            "status": "error", 
+            "message": str(e)
+        }
+
+
+@router.delete("/reset-data-folder", tags=["system"])
+async def reset_data_folder():
+    """
+    Delete and recreate the ./data folder.
+    
+    This endpoint completely removes the ./data directory and all its contents,
+    then creates a new empty ./data folder.
+    """
+    try:
+        data_path = "./data"
+        
+        # Delete the data directory if it exists
+        if os.path.exists(data_path):
+            shutil.rmtree(data_path)
+        
+        # Create a new empty data directory
+        os.makedirs(data_path, exist_ok=True)
+        
+        return {
+            "status": "success",
+            "message": "Data folder has been reset successfully"
         }
     
     except Exception as e:
