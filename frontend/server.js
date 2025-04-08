@@ -3,6 +3,8 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import compression from 'compression';
 
+console.log(import.meta.url);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -16,7 +18,7 @@ app.use(compression());
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Handle all routes by serving the index.html file (SPA support)
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
