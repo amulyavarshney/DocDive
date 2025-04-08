@@ -15,7 +15,7 @@ import {
 
 // Configure axios instance
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL + '/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -138,8 +138,18 @@ export const systemApi = {
     return response.data;
   },
   
-  runLocustTest: async (): Promise<any> => {
-    const response = await apiClient.post('/run-locust');
+  runLocustTest: async (config: {
+    target_url: string;
+    num_users?: number;
+    spawn_rate?: number;
+    run_time?: string;
+  }): Promise<any> => {
+    // If target_url is not provided or empty, use the current API URL
+    if (!config.target_url) {
+      config.target_url = import.meta.env.VITE_API_URL;
+    }
+    
+    const response = await apiClient.post('/run-locust', config);
     return response.data;
   },
 

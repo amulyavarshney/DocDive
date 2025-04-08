@@ -110,11 +110,21 @@ export const useLocustTest = () => {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
 
-  const runLocustTest = async () => {
+  const runLocustTest = async (config?: {
+    target_url?: string;
+    num_users?: number;
+    spawn_rate?: number;
+    run_time?: string;
+  }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await systemApi.runLocustTest();
+      const defaultConfig = {
+        target_url: import.meta.env.VITE_API_URL
+      };
+      
+      const finalConfig = { ...defaultConfig, ...config };
+      const response = await systemApi.runLocustTest(finalConfig);
       setResult(response);
       return response;
     } catch (err: any) {

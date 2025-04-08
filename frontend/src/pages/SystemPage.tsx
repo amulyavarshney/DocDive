@@ -26,6 +26,7 @@ import {
   Activity,
   PlayCircle,
   Clock,
+  Settings,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -37,6 +38,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Badge component for the dashboard
 const Badge = ({
@@ -65,6 +75,7 @@ const SystemPage: React.FC = () => {
 
   const [showChromaDialog, setShowChromaDialog] = useState(false);
   const [showMongoDialog, setShowMongoDialog] = useState(false);
+  const [showLocustDialog, setShowLocustDialog] = useState(false);
   const [resetSuccess, setResetSuccess] = useState<{
     message: string;
     type: string;
@@ -73,6 +84,14 @@ const SystemPage: React.FC = () => {
     message: string;
     type: string;
   } | null>(null);
+  
+  // Load test configuration state
+  const [loadTestConfig, setLoadTestConfig] = useState({
+    target_url: import.meta.env.VITE_API_URL,
+    num_users: 10,
+    spawn_rate: 2,
+    run_time: '1m'
+  });
 
   const handleRunDiagnostics = async () => {
     try {
@@ -112,7 +131,8 @@ const SystemPage: React.FC = () => {
 
   const handleRunLocustTest = async () => {
     try {
-      const result = await runLocustTest();
+      setShowLocustDialog(false);
+      const result = await runLocustTest(loadTestConfig);
 
       if (result.status === "success" && result.url) {
         // Open Locust UI in a new tab
@@ -121,12 +141,20 @@ const SystemPage: React.FC = () => {
 
       setTestSuccess({
         message:
-          "Locust started successfully. Opening the Locust web interface in a new tab.",
+          `Locust started successfully. Testing against ${loadTestConfig.target_url}. Opening the Locust web interface in a new tab.`,
         type: "locust",
       });
     } catch (error) {
       console.error("Locust test failed:", error);
     }
+  };
+
+  // Handler for input changes
+  const handleConfigChange = (field: string, value: string | number) => {
+    setLoadTestConfig(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const renderServiceStatus = (name: string, service: string) => {
@@ -355,25 +383,102 @@ const SystemPage: React.FC = () => {
                   <div>
                     <h3 className="font-medium mb-2">Locust Load Test</h3>
                     <p className="text-sm text-gray-500 mb-4">
-                      This will start a Locust load testing server and open the
-                      web interface in a new tab. You can then configure and run
-                      your tests through the Locust UI.
+                      Configure and run a load test against your deployed backend. The results will be displayed in the Locust web interface.
                     </p>
-                    <Button
-                      onClick={handleRunLocustTest}
-                      disabled={isLocustLoading}
-                      variant="outline"
-                      className="w-full flex items-center justify-center"
+                    <Dialog
+                      open={showLocustDialog}
+                      onOpenChange={setShowLocustDialog}
                     >
-                      {isLocustLoading ? (
-                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <PlayCircle className="mr-2 h-4 w-4" />
-                      )}
-                      {isLocustLoading
-                        ? "Starting Locust..."
-                        : "Start Locust Web UI"}
-                    </Button>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full flex items-center justify-center"
+                        >
+                          <Settings className="mr-2 h-4 w-4" />
+                          Configure Load Test
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Configure Load Test</DialogTitle>
+                          <DialogDescription>
+                            Set up your load test parameters to target your deployed backend.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="target_url">Target API URL</Label>
+                            <Input
+                              id="target_url"
+                              placeholder="https://api.example.com"
+                              value={loadTestConfig.target_url}
+                              onChange={(e) => handleConfigChange('target_url', e.target.value)}
+                            />
+                            <p className="text-sm text-gray-500">
+                              The backend API URL to test against
+                            </p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                              <Label htmlFor="num_users">Number of Users</Label>
+                              <Input
+                                id="num_users"
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={loadTestConfig.num_users}
+                                onChange={(e) => handleConfigChange('num_users', parseInt(e.target.value))}
+                              />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label htmlFor="spawn_rate">Spawn Rate</Label>
+                              <Input
+                                id="spawn_rate"
+                                type="number"
+                                min="1"
+                                max="50"
+                                value={loadTestConfig.spawn_rate}
+                                onChange={(e) => handleConfigChange('spawn_rate', parseInt(e.target.value))}
+                              />
+                            </div>
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="run_time">Run Time</Label>
+                            <Select 
+                              value={loadTestConfig.run_time} 
+                              onValueChange={(value) => handleConfigChange('run_time', value)}
+                            >
+                              <SelectTrigger id="run_time">
+                                <SelectValue placeholder="Select duration" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="30s">30 seconds</SelectItem>
+                                <SelectItem value="1m">1 minute</SelectItem>
+                                <SelectItem value="5m">5 minutes</SelectItem>
+                                <SelectItem value="10m">10 minutes</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowLocustDialog(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={handleRunLocustTest}
+                            disabled={isLocustLoading}
+                          >
+                            {isLocustLoading && (
+                              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            )}
+                            Start Load Test
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </CardContent>
               </Card>

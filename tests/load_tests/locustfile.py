@@ -4,6 +4,7 @@ import random
 import json
 import string
 import logging
+import warnings
 from typing import Dict, List, Optional, Union
 from locust import HttpUser, task, between, events, constant_pacing, TaskSet
 from datetime import datetime
@@ -12,12 +13,16 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("locust")
 
+# Suppress SSL warnings when verification is disabled
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
+
 # TEST CONFIGURATION
 # These settings control the test behavior
 TEST_DURATION_SECONDS = 60  # 1 minute test
 TARGET_RPS_MIN = 10
 TARGET_RPS_MAX = 50
 MAX_USERS = 20  # Maximum number of simulated users
+VERIFY_SSL = False  # Set to False to disable SSL certificate verification for deployed endpoints
 
 # Sample data for generating test content
 QUERY_TEMPLATES = [
@@ -64,6 +69,7 @@ def on_test_stop(environment, **kwargs):
             user_class = environment.runner.user_classes[0]
             cleanup_client = user_class(environment)
             cleanup_client.client.timeout = 30.0
+            cleanup_client.client.verify = VERIFY_SSL  # Apply SSL verification setting
         else:
             logger.warning("Could not create cleanup client - runner or user classes not available")
             return
@@ -78,7 +84,8 @@ def on_test_stop(environment, **kwargs):
             response = cleanup_client.client.delete(
                 f"/api/documents/{doc_id}", 
                 name="/api/documents/{id} [cleanup]",
-                timeout=10.0
+                timeout=10.0,
+                verify=VERIFY_SSL
             )
             if response.status_code in [200, 204, 404]:
                 created_document_ids.remove(doc_id)
@@ -99,7 +106,8 @@ def on_test_stop(environment, **kwargs):
                 cleanup_client.client.delete(
                     "/api/reset-mongodb", 
                     name="/api/reset-mongodb [cleanup]",
-                    timeout=10.0
+                    timeout=10.0,
+                    verify=VERIFY_SSL
                 )
                 logger.info("✅ MongoDB reset")
             except Exception as mongo_err:
@@ -109,7 +117,8 @@ def on_test_stop(environment, **kwargs):
                 cleanup_client.client.delete(
                     "/api/reset-chromadb", 
                     name="/api/reset-chromadb [cleanup]",
-                    timeout=10.0
+                    timeout=10.0,
+                    verify=VERIFY_SSL
                 )
                 logger.info("✅ ChromaDB reset")
             except Exception as chroma_err:
@@ -130,6 +139,15 @@ def on_test_stop(environment, **kwargs):
 class DocumentOperations(TaskSet):
     """Document-related API operations"""
     
+    def make_request(self, method, url, **kwargs):
+        """Helper method to ensure consistent request settings"""
+        if 'verify' not in kwargs:
+            kwargs['verify'] = VERIFY_SSL
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = 30.0
+            
+        return getattr(self.client, method)(url, **kwargs)
+    
     @task(3)
     def upload_document(self):
         """Upload a test document"""
@@ -144,7 +162,8 @@ class DocumentOperations(TaskSet):
         # Create file in memory
         try:
             # Upload the document
-            response = self.client.post(
+            response = self.make_request(
+                'post',
                 "/api/documents/upload",
                 files={"file": (filename, content, "text/plain")},
                 name="/api/documents/upload"
@@ -165,7 +184,8 @@ class DocumentOperations(TaskSet):
         limit = random.randint(5, 20)
         skip = random.randint(0, 5)
         try:
-            self.client.get(
+            self.make_request(
+                'get',
                 f"/api/documents?limit={limit}&skip={skip}",
                 name="/api/documents"
             )
@@ -181,7 +201,8 @@ class DocumentOperations(TaskSet):
             
         doc_id = random.choice(created_document_ids)
         try:
-            self.client.get(
+            self.make_request(
+                'get',
                 f"/api/documents/{doc_id}",
                 name="/api/documents/{id}"
             )
@@ -192,7 +213,11 @@ class DocumentOperations(TaskSet):
     def get_document_stats(self):
         """Get document statistics"""
         try:
-            self.client.get("/api/documents/stats", name="/api/documents/stats")
+            self.make_request(
+                'get',
+                "/api/documents/stats", 
+                name="/api/documents/stats"
+            )
         except Exception as e:
             logger.error(f"❌ Get document stats error: {str(e)}")
     
@@ -200,7 +225,11 @@ class DocumentOperations(TaskSet):
     def get_document_types(self):
         """Get document type distribution"""
         try:
-            self.client.get("/api/documents/types", name="/api/documents/types")
+            self.make_request(
+                'get',
+                "/api/documents/types", 
+                name="/api/documents/types"
+            )
         except Exception as e:
             logger.error(f"❌ Get document types error: {str(e)}")
     
@@ -214,7 +243,8 @@ class DocumentOperations(TaskSet):
         # Get a random document ID and remove it from our tracking list
         doc_id = random.choice(created_document_ids)
         try:
-            response = self.client.delete(
+            response = self.make_request(
+                'delete',
                 f"/api/documents/{doc_id}",
                 name="/api/documents/{id}"
             )
@@ -252,6 +282,15 @@ class DocumentOperations(TaskSet):
 class QueryOperations(TaskSet):
     """Query-related API operations"""
     
+    def make_request(self, method, url, **kwargs):
+        """Helper method to ensure consistent request settings"""
+        if 'verify' not in kwargs:
+            kwargs['verify'] = VERIFY_SSL
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = 30.0
+            
+        return getattr(self.client, method)(url, **kwargs)
+    
     @task(10)
     def query_documents(self):
         """Query documents with generated questions"""
@@ -263,7 +302,8 @@ class QueryOperations(TaskSet):
         max_results = random.randint(1, 3)
         
         try:
-            response = self.client.post(
+            response = self.make_request(
+                'post',
                 "/api/query",
                 json={"query_text": query_text, "max_results": max_results},
                 name="/api/query"
@@ -285,7 +325,8 @@ class QueryOperations(TaskSet):
         sort = random.choice(["asc", "desc"])
         
         try:
-            self.client.get(
+            self.make_request(
+                'get',
                 f"/api/queries?limit={limit}&skip={skip}&sort={sort}",
                 name="/api/queries"
             )
@@ -300,7 +341,8 @@ class QueryOperations(TaskSet):
             
         query_id = random.choice(created_query_ids)
         try:
-            self.client.get(
+            self.make_request(
+                'get',
                 f"/api/queries/{query_id}",
                 name="/api/queries/{id}"
             )
@@ -316,13 +358,23 @@ class QueryOperations(TaskSet):
 class MetricsOperations(TaskSet):
     """Metrics API operations"""
     
+    def make_request(self, method, url, **kwargs):
+        """Helper method to ensure consistent request settings"""
+        if 'verify' not in kwargs:
+            kwargs['verify'] = VERIFY_SSL
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = 30.0
+            
+        return getattr(self.client, method)(url, **kwargs)
+    
     @task(1)
     def get_metrics_summary(self):
         """Get metrics summary"""
         days = random.randint(1, 7)
         limit = random.randint(5, 10)
         try:
-            self.client.get(
+            self.make_request(
+                'get',
                 f"/api/metrics/summary?days={days}&limit={limit}",
                 name="/api/metrics/summary"
             )
@@ -334,7 +386,8 @@ class MetricsOperations(TaskSet):
         """Get query volume metrics"""
         days = random.randint(1, 7)
         try:
-            self.client.get(
+            self.make_request(
+                'get',
                 f"/api/metrics/query-volume?days={days}",
                 name="/api/metrics/query-volume"
             )
@@ -346,7 +399,8 @@ class MetricsOperations(TaskSet):
         """Get latency metrics"""
         days = random.randint(1, 7)
         try:
-            self.client.get(
+            self.make_request(
+                'get',
                 f"/api/metrics/latency?days={days}",
                 name="/api/metrics/latency"
             )
@@ -358,7 +412,8 @@ class MetricsOperations(TaskSet):
         """Get success rate metrics"""
         days = random.randint(1, 7)
         try:
-            self.client.get(
+            self.make_request(
+                'get',
                 f"/api/metrics/success-rate?days={days}",
                 name="/api/metrics/success-rate"
             )
@@ -371,7 +426,8 @@ class MetricsOperations(TaskSet):
         days = random.randint(1, 7)
         limit = random.randint(5, 10)
         try:
-            self.client.get(
+            self.make_request(
+                'get',
                 f"/api/metrics/top-queries?days={days}&limit={limit}",
                 name="/api/metrics/top-queries"
             )
@@ -384,7 +440,8 @@ class MetricsOperations(TaskSet):
         days = random.randint(1, 7)
         limit = random.randint(5, 10)
         try:
-            self.client.get(
+            self.make_request(
+                'get',
                 f"/api/metrics/top-documents?days={days}&limit={limit}",
                 name="/api/metrics/top-documents"
             )
@@ -394,11 +451,24 @@ class MetricsOperations(TaskSet):
 class SystemOperations(TaskSet):
     """System API operations"""
     
+    def make_request(self, method, url, **kwargs):
+        """Helper method to ensure consistent request settings"""
+        if 'verify' not in kwargs:
+            kwargs['verify'] = VERIFY_SSL
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = 30.0
+            
+        return getattr(self.client, method)(url, **kwargs)
+    
     @task(1)
     def get_diagnostics(self):
         """Get system diagnostics"""
         try:
-            self.client.get("/api/diagnostics", name="/api/diagnostics")
+            self.make_request(
+                'get',
+                "/api/diagnostics", 
+                name="/api/diagnostics"
+            )
         except Exception as e:
             logger.error(f"❌ Diagnostics error: {str(e)}")
 
@@ -422,6 +492,7 @@ class DocDiveUser(HttpUser):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.client.timeout = 30.0  # Set a reasonable timeout
+        self.client.verify = VERIFY_SSL  # Apply SSL verification setting
         self.start_time = None
     
     def on_start(self):
@@ -432,7 +503,7 @@ class DocDiveUser(HttpUser):
             "User-Agent": "DocDiveLoadTest/1.0",
             "Connection": "close"  # Prevent connection pooling issues
         })
-        logger.info(f"👤 User started at {self.start_time}")
+        logger.info(f"👤 User started at {self.start_time} (SSL verification: {VERIFY_SSL})")
     
     def on_stop(self):
         """Clean up user session"""
@@ -445,5 +516,8 @@ if __name__ == "__main__":
     print("DocDive Load Test")
     print("=================")
     print(f"Target: {TARGET_RPS_MIN}-{TARGET_RPS_MAX} RPS for {TEST_DURATION_SECONDS} seconds")
-    print("To run the load test:")
+    print(f"SSL verification: {'Enabled' if VERIFY_SSL else 'Disabled'}")
+    print("\nTo run the load test against a local endpoint:")
     print("locust -f locustfile.py --host=http://localhost:8000 --users 10 --spawn-rate 2 --run-time 1m --headless")
+    print("\nTo run against a deployed HTTPS endpoint with SSL verification disabled:")
+    print("locust -f locustfile.py --host=https://your-deployed-endpoint.com --users 10 --spawn-rate 2 --run-time 1m --headless")

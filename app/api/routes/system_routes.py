@@ -1,11 +1,19 @@
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Body
 from app.services import system_service
 import subprocess
 import threading
 import os
 import shutil
+from typing import Optional
+from pydantic import BaseModel, HttpUrl
 
 router = APIRouter()
+
+class LocustTestConfig(BaseModel):
+    target_url: HttpUrl
+    num_users: Optional[int] = 10
+    spawn_rate: Optional[int] = 2
+    run_time: Optional[str] = "1m"
 
 @router.get("/diagnostics", tags=["system"])
 async def run_diagnostics():
@@ -67,17 +75,32 @@ async def reset_mongo_database():
 
 
 @router.post("/run-locust", tags=["system"])
-async def run_locust_test():
+async def run_locust_test(config: LocustTestConfig = Body(...)):
     """
     Start a Locust load test with web UI.
     
     This endpoint launches a Locust instance with web UI enabled on port 8089.
     Users can then visit the Locust web interface to configure and run tests.
+    
+    Parameters:
+    - target_url: The backend URL to test against (e.g., https://api.example.com)
+    - num_users: Number of simulated users (default: 10)
+    - spawn_rate: Rate of user spawning per second (default: 2)
+    - run_time: Duration of the test (default: "1m")
     """
     try:
         # Define the command to run Locust with web UI
         port = 8089
-        cmd = ["locust", "-f", "tests/load_tests/locustfile.py", "--web-host", "0.0.0.0", "--web-port", str(port)]
+        cmd = [
+            "locust", 
+            "-f", "tests/load_tests/locustfile.py", 
+            "--web-host", "0.0.0.0", 
+            "--web-port", str(port),
+            "--host", str(config.target_url),
+            "--users", str(config.num_users),
+            "--spawn-rate", str(config.spawn_rate),
+            "--run-time", config.run_time
+        ]
         
         # Start Locust in a separate thread
         def run_locust_in_background():
@@ -89,6 +112,7 @@ async def run_locust_test():
             )
             print(f"Locust started with PID: {process.pid}")
             print(f"Access the Locust web UI at: http://localhost:{port}")
+            print(f"Testing against: {config.target_url}")
         
         # Start the thread
         thread = threading.Thread(target=run_locust_in_background)
@@ -100,7 +124,13 @@ async def run_locust_test():
             "status": "success",
             "message": "Locust started with web UI",
             "url": f"http://localhost:{port}",
-            "command": " ".join(cmd)
+            "command": " ".join(cmd),
+            "test_config": {
+                "target_url": str(config.target_url),
+                "num_users": config.num_users,
+                "spawn_rate": config.spawn_rate,
+                "run_time": config.run_time
+            }
         }
     
     except Exception as e:

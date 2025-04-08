@@ -36,7 +36,7 @@ app.include_router(system_routes.router, prefix="/api", tags=["system"])
 # Mount static files
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
-@app.get("/", tags=["health"], response_model=dict)
+@app.get("/api", tags=["health"], response_model=dict)
 async def health_check() -> JSONResponse:
     """Health check endpoint"""
     return JSONResponse(content={"status": "healthy", "version": "1.0.0"})
