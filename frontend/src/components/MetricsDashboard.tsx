@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMetricsSummary, useQueryVolume, useLatencyMetrics, useSuccessRate, useTopQueries, useTopDocuments } from '@/hooks/useMetrics';
 import { useDocumentTypeDistribution } from '@/hooks/useDocuments';
+import RouteHealthWidget from '@/components/RouteHealthWidget';
 
 // Badge component for the dashboard
 const Badge = ({ className, children }: { className?: string; children: React.ReactNode }) => {
@@ -197,53 +198,8 @@ const MetricsDashboard: React.FC = () => {
         </div>
       </div>
       
-      {/* System Status */}
-      <div className="dashboard-card col-span-2 md:col-span-1">
-        <h3 className="font-medium mb-4">System Status</h3>
-        
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-md mr-3">
-                <CheckCircle className="h-5 w-5 text-docflow-success" />
-              </div>
-              <span className="font-medium">Document Processing</span>
-            </div>
-            <Badge className="bg-green-100 text-green-800">Operational</Badge>
-          </div>
-          
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-md mr-3">
-                <CheckCircle className="h-5 w-5 text-docflow-success" />
-              </div>
-              <span className="font-medium">Q&A Service</span>
-            </div>
-            <Badge className="bg-green-100 text-green-800">Operational</Badge>
-          </div>
-          
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-md mr-3">
-                <Clock className="h-5 w-5 text-docflow-warning" />
-              </div>
-              <span className="font-medium">Analytics Engine</span>
-            </div>
-            <Badge className="bg-yellow-100 text-yellow-800">Minor Issues</Badge>
-          </div>
-          
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-md mr-3">
-                <Users className="h-5 w-5 text-docflow-success" />
-              </div>
-              <span className="font-medium">User Management</span>
-            </div>
-            <Badge className="bg-green-100 text-green-800">Operational</Badge>
-          </div>
-        </div>
-      </div>
-      
+      {/* API Route Health - Full Width */}
+      <RouteHealthWidget />      
     </div>
   );
 };

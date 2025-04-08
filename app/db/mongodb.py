@@ -155,9 +155,11 @@ async def get_success_rate(days: int = 7) -> List[Dict[str, Any]]:
     ]
     return list(queries_collection.aggregate(pipeline))
 
-async def get_top_queries(limit: int = 10) -> List[Dict[str, Any]]:
+async def get_top_queries(days: int = 7, limit: int = 10) -> List[Dict[str, Any]]:
     """Get top queried questions"""
+    start_date = datetime.utcnow() - timedelta(days=days)
     pipeline = [
+        {"$match": {"timestamp": {"$gte": start_date}}},
         {"$group": {
             "_id": "$query_text",
             "count": {"$sum": 1}
@@ -167,9 +169,11 @@ async def get_top_queries(limit: int = 10) -> List[Dict[str, Any]]:
     ]
     return list(queries_collection.aggregate(pipeline))
 
-async def get_top_documents(limit: int = 10) -> List[Dict[str, Any]]:
+async def get_top_documents(days: int = 7, limit: int = 10) -> List[Dict[str, Any]]:
     """Get top queried documents"""
+    start_date = datetime.utcnow() - timedelta(days=days)
     pipeline = [
+        {"$match": {"timestamp": {"$gte": start_date}}},
         {"$unwind": "$document_ids"},
         {"$group": {
             "_id": "$document_ids",

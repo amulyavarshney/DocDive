@@ -55,9 +55,9 @@ async def get_success_rate(days: int = 7) -> List[SuccessRate]:
     ]
 
 
-async def get_top_queries(limit: int = 10) -> List[TopQueries]:
+async def get_top_queries(days: int = 7, limit: int = 10) -> List[TopQueries]:
     """Get top queried questions"""
-    results = await mongodb.get_top_queries(limit)
+    results = await mongodb.get_top_queries(days, limit)
     
     # Format results
     return [
@@ -66,9 +66,9 @@ async def get_top_queries(limit: int = 10) -> List[TopQueries]:
     ]
 
 
-async def get_top_documents(limit: int = 10) -> List[TopDocuments]:
+async def get_top_documents(days: int = 7, limit: int = 10) -> List[TopDocuments]:
     """Get top queried documents"""
-    results = await mongodb.get_top_documents(limit)
+    results = await mongodb.get_top_documents(days, limit)
     
     # Format results
     return [

@@ -15,7 +15,7 @@ const MetricsPage: React.FC = () => {
         
         {/* Main Content */}
         <div className="mt-6">
-          <h1 className="text-2xl font-bold mb-6">Metrics Dashboard</h1>
+          {/* <h1 className="text-2xl font-bold mb-6">Metrics Dashboard</h1> */}
           
           <MetricsDashboard />
         </div>

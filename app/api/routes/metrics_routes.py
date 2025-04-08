@@ -76,13 +76,14 @@ async def get_success_rate(
 
 @router.get("/metrics/top-queries", response_model=List[TopQueries], tags=["metrics"])
 async def get_top_queries(
+    days: int = Query(7, ge=1, le=30),
     limit: int = Query(10, ge=1, le=100)
 ):
     """
     Get top queried questions.
     """
     try:
-        top_queries = await metrics_service.get_top_queries(limit)
+        top_queries = await metrics_service.get_top_queries(days, limit)
         return top_queries
     
     except Exception as e:
@@ -91,13 +92,14 @@ async def get_top_queries(
 
 @router.get("/metrics/top-documents", response_model=List[TopDocuments], tags=["metrics"])
 async def get_top_documents(
+    days: int = Query(7, ge=1, le=30),
     limit: int = Query(10, ge=1, le=100)
 ):
     """
     Get top queried documents.
     """
     try:
-        top_documents = await metrics_service.get_top_documents(limit)
+        top_documents = await metrics_service.get_top_documents(days, limit)
         return top_documents
     
     except Exception as e:

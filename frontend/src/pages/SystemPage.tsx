@@ -199,7 +199,7 @@ const SystemPage: React.FC = () => {
 
         {/* Main Content */}
         <div className="mt-6">
-          <h1 className="text-2xl font-bold mb-6">System Administration</h1>
+          <h1 className="text-2xl font-bold">System Administration</h1>
 
           <div className="container mx-auto py-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

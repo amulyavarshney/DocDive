@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { metricsApi } from '../api/apiClient';
 
@@ -30,16 +29,16 @@ export function useSuccessRate(days: number = 7) {
   });
 }
 
-export function useTopQueries(limit: number = 10) {
+export function useTopQueries(days: number = 7, limit: number = 10) {
   return useQuery({
-    queryKey: ['topQueries', limit],
-    queryFn: () => metricsApi.getTopQueries(limit),
+    queryKey: ['topQueries', days, limit],
+    queryFn: () => metricsApi.getTopQueries(days, limit),
   });
 }
 
-export function useTopDocuments(limit: number = 10) {
+export function useTopDocuments(days: number = 7, limit: number = 10) {
   return useQuery({
-    queryKey: ['topDocuments', limit],
-    queryFn: () => metricsApi.getTopDocuments(limit),
+    queryKey: ['topDocuments', days, limit],
+    queryFn: () => metricsApi.getTopDocuments(days, limit),
   });
 }

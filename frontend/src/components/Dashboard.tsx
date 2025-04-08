@@ -2,6 +2,13 @@ import React, { useState } from 'react';
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useTopQueries, useTopDocuments } from '@/hooks/useMetrics';
 import { useDocumentTypeDistribution } from '@/hooks/useDocuments';
 import SystemStatusWidget from './SystemStatusWidget';
@@ -18,6 +25,7 @@ const Badge = ({ className, children }: { className?: string; children: React.Re
 
 const Dashboard: React.FC = () => {
   const [timeframe, setTimeframe] = useState<number>(7);
+  const [showCustomTimeframe, setShowCustomTimeframe] = useState<boolean>(false);
   const { data: topQueries, isLoading: isQueriesLoading } = useTopQueries(timeframe);
   const { data: topDocuments, isLoading: isDocumentsLoading } = useTopDocuments(timeframe);
   const { data: typeDistribution, isLoading: isTypeDistributionLoading} = useDocumentTypeDistribution();
@@ -33,9 +41,61 @@ const Dashboard: React.FC = () => {
   }, [typeDistribution]);
 
   const COLORS = ['#0ea5e9', '#64748b', '#10b981', '#f59e0b'];
+  
+  const handleTimeframeChange = (value: string) => {
+    if (value === 'custom') {
+      setShowCustomTimeframe(true);
+    } else {
+      setTimeframe(parseInt(value));
+      setShowCustomTimeframe(false);
+    }
+  };
+
+  const handleCustomTimeframeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value > 0 && value <= 365) {
+      setTimeframe(value);
+    }
+  };
 
   return (
     <>
+      {/* Timeframe selector */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold">Dashboard</h2>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-docflow-secondary">Timeframe:</span>
+          <Select
+            value={showCustomTimeframe ? 'custom' : timeframe.toString()}
+            onValueChange={handleTimeframeChange}
+          >
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Select days" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">7 days</SelectItem>
+              <SelectItem value="14">14 days</SelectItem>
+              <SelectItem value="30">30 days</SelectItem>
+              <SelectItem value="custom">Custom</SelectItem>
+            </SelectContent>
+          </Select>
+          {showCustomTimeframe && (
+            <div className="flex items-center">
+              <input
+                type="number"
+                min="1"
+                max="365"
+                value={timeframe}
+                onChange={handleCustomTimeframeChange}
+                className="w-20 h-10 rounded-md border border-input px-3 py-2 text-sm"
+                placeholder="Days"
+              />
+              <span className="ml-2 text-sm">days</span>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">      
         {/* Donut Chart */}
         <div className="dashboard-card">
@@ -76,7 +136,10 @@ const Dashboard: React.FC = () => {
         
         {/* Top Queries */}
         <div className="dashboard-card">
-          <h3 className="font-medium mb-4">Top Queries</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-medium">Top Queries</h3>
+            <div className="text-xs text-docflow-secondary">Past {timeframe} days</div>
+          </div>
           
           {isQueriesLoading ? (
             <div className="space-y-3">
@@ -107,7 +170,10 @@ const Dashboard: React.FC = () => {
         
         {/* Most Used Documents */}
         <div className="dashboard-card col-span-2 md:col-span-1">
-          <h3 className="font-medium mb-4">Most Queried Documents</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-medium">Most Queried Documents</h3>
+            <div className="text-xs text-docflow-secondary">Past {timeframe} days</div>
+          </div>
           
           {isDocumentsLoading ? (
             <div className="space-y-3">

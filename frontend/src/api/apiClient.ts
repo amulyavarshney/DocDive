@@ -15,7 +15,7 @@ import {
 
 // Configure axios instance
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_DEV_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -110,13 +110,13 @@ export const metricsApi = {
     return response.data;
   },
   
-  getTopQueries: async (limit: number = 10): Promise<TopQueries[]> => {
-    const response = await apiClient.get<TopQueries[]>(`/metrics/top-queries?limit=${limit}`);
+  getTopQueries: async (days: number = 7, limit: number = 10): Promise<TopQueries[]> => {
+    const response = await apiClient.get<TopQueries[]>(`/metrics/top-queries?days=${days}&limit=${limit}`);
     return response.data;
   },
   
-  getTopDocuments: async (limit: number = 10): Promise<TopDocuments[]> => {
-    const response = await apiClient.get<TopDocuments[]>(`/metrics/top-documents?limit=${limit}`);
+  getTopDocuments: async (days: number = 7, limit: number = 10): Promise<TopDocuments[]> => {
+    const response = await apiClient.get<TopDocuments[]>(`/metrics/top-documents?days=${days}&limit=${limit}`);
     return response.data;
   }
 };
