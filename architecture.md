@@ -7,7 +7,7 @@
 ┌───────────────────┐   Document Upload    ┌─────────────────────┐
 │                   │─────────────────────>│                     │
 │                   │                      │                     │
-│   Retool UI       │   Query Documents    │  FastAPI Backend    │
+│   React UI        │   Query Documents    │  FastAPI Backend    │
 │   Dashboard       │─────────────────────>│                     │
 │                   │                      │                     │
 │                   │   Get Metrics        │                     │
@@ -60,11 +60,12 @@
 ## Component Descriptions
 
 ### Frontend Layer
-- **Retool Dashboard**: Interactive UI for document management, Q&A interface, and metrics visualization.
+- **React Dashboard**: Modern UI built with React, TypeScript and Vite.
   - Document upload and management interface with status tracking
   - Interactive Q&A interface with document selection and context highlighting
   - Real-time analytics dashboard with key performance indicators
   - User-friendly document browser with filtering capabilities
+  - Styled with Tailwind CSS and shadcn/ui components
 
 ### API Layer
 - **FastAPI Backend**: High-performance asynchronous API providing endpoints for document management, queries, and metrics.
@@ -92,6 +93,12 @@
   - Success rate calculation with error categorization
   - Identification of popular queries and documents
   - Trend analysis for system optimization
+
+- **System Service**: Manages system health, configurations, and administrative tasks.
+  - System status monitoring and health checks
+  - Configuration management and dynamic settings
+  - Administrative functions for system maintenance
+  - Error tracking and logging capabilities
 
 ### Data Layer
 - **MongoDB**: Document-oriented database for metadata and analytics.
@@ -125,6 +132,13 @@
   - Database connection health checks
   - LLM service status tracking
   - Response time and error rate monitoring
+
+### Deployment Options
+- **Docker Containerization**: Simplified deployment with Docker and docker-compose.
+  - Separate containers for frontend, backend, and database services
+  - Environment-based configuration
+  - Container orchestration for service coordination
+  - Simplified scaling and deployment
 
 ### Testing & QA
 - **Locust**: Load testing framework for performance evaluation.

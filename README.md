@@ -16,6 +16,7 @@ DocDive is an advanced LLM-powered document search and Q&A platform that enables
 ## Architecture
 For a detailed architecture diagram and component descriptions, see [Architecture Documentation](architecture.md).
 
+## Backend
 ```
 app/
 ├── api/            # API endpoints
@@ -23,13 +24,16 @@ app/
 ├── db/             # Database models and connections
 ├── models/         # Pydantic models
 ├── services/       # Business logic
-│   ├── document/   # Document processing
-│   ├── embedding/  # Vector embedding
-│   ├── llm/        # LLM integration
-│   └── metrics/    # Performance tracking
-├── utils/          # Utility functions
-└── frontend/       # Retool frontend components
+│   ├── document_service.py   # Document processing
+│   ├── query_service.py      # LLM integration & search
+│   ├── metrics_service.py    # Performance tracking
+│   ├── system_service.py     # System monitoring
+│   └── chroma_client.py      # Vector DB client
+└── main.py         # Application entry point
 ```
+
+## Frontend
+For a detailed frontend component descriptions, see [Frontend Documentation](frontend/README.md).
 
 ## Tech Stack
 - **Backend**: Python 3.11+ with FastAPI
@@ -37,7 +41,9 @@ app/
 - **LLM Integration**: Azure OpenAI, OpenAI, Anthropic Claude
 - **Vector Store**: ChromaDB
 - **Database**: MongoDB
-- **Frontend**: Retool
+- **Frontend**: React + TypeScript with Vite
+  - UI Components: shadcn/ui
+  - Styling: Tailwind CSS
 - **Load Testing**: Locust
 
 ## Setup Instructions
@@ -45,6 +51,7 @@ app/
 ### Prerequisites
 - Python 3.11+
 - MongoDB
+- Node.js 20+ and npm
 - API keys for LLM services (OpenAI/Azure OpenAI/Anthropic)
 
 ### Installation
@@ -60,9 +67,9 @@ app/
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. Install dependencies
+3. Install backend dependencies
    ```
-   pip install -r requirements.txt
+   pip install -r app/requirements.txt
    ```
 
 4. Create a `.env` file with your configuration
@@ -90,30 +97,96 @@ app/
    DEFAULT_TOP_K=4
    ```
 
-5. Run the application
+5. Install frontend dependencies
    ```
+   cd frontend
+   npm install
+   ```
+
+6. Run the backend application
+   ```
+   cd ..  # Return to project root
    uvicorn app.main:app --reload
    ```
 
+7. Run the frontend application (in a separate terminal)
+   ```
+   cd frontend
+   npm run dev
+   ```
+
 ### API Endpoints
+
+#### Document Management
 - `POST /api/documents/upload` - Upload documents
 - `GET /api/documents` - List all documents
 - `GET /api/documents/{document_id}` - Get document details
 - `DELETE /api/documents/{document_id}` - Delete document
+- `GET /api/documents/stats` - Get document statistics
+- `GET /api/documents/type-distribution` - Get document type distribution
+
+#### Query Operations
 - `POST /api/query` - Query documents with LLM
 - `GET /api/query/history` - Get query history
 - `GET /api/query/{query_id}` - Get specific query
-- `GET /api/metrics` - Get performance metrics
-- `GET /api/system/health` - Check system health
 
-## Dashboard
-Access the Retool dashboard at: [Dashboard URL]
+#### Metrics
+- `GET /api/metrics` - Get performance metrics summary
+- `GET /api/metrics/query-volume` - Get daily query volume
+- `GET /api/metrics/latency` - Get average latency metrics
+- `GET /api/metrics/success-rate` - Get query success rate
+- `GET /api/metrics/top-queries` - Get most frequent queries
+- `GET /api/metrics/top-documents` - Get most queried documents
+
+#### System Operations
+- `GET /api/system/health` - Check system health
+- `GET /api/diagnostics` - Run system diagnostics
+- `DELETE /api/reset-chromadb` - Reset ChromaDB
+- `DELETE /api/reset-mongodb` - Reset MongoDB
+- `POST /api/run-locust` - Run load tests
+
+## Docker Deployment
+You can also run the application using Docker:
+```
+docker-compose up -d
+```
+
+## Testing
+DocDive includes comprehensive test suites for ensuring functionality and performance. For detailed information about running and extending tests, see the [Tests Documentation](tests/README.md).
+
+### Running Tests
+```
+# Run all tests
+python tests/run_tests.py all
+
+# Run only E2E tests
+python tests/run_tests.py e2e
+
+# Run load tests
+python tests/run_tests.py load
+```
 
 ## Load Testing
 Run load tests with Locust:
 ```
-locust -f app/tests/locustfile.py
+locust -f tests/locustfile.py
 ```
+
+## Troubleshooting & FAQ
+
+### Common Issues
+
+**Q: ChromaDB connection fails when starting the application**
+A: Ensure that the `VECTOR_DB_PATH` in your `.env` file points to a valid directory and that you have write permissions to that location.
+
+**Q: LLM responses are slow or timing out**
+A: Check your API key rate limits and connection to the LLM provider. You may need to increase the timeout settings in the config.
+
+**Q: Document uploads fail for certain file types**
+A: Verify that the file type is supported and that the document isn't corrupted or password-protected.
+
+**Q: MongoDB connection errors**
+A: Ensure MongoDB is running and accessible at the URI specified in your `.env` file.
 
 ## License
 MIT 
